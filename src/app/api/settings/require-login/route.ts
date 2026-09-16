@@ -54,6 +54,9 @@ export async function GET() {
         isFeatureFlagEnabled("OMNIROUTE_OIDC_DISABLE_PASSWORD_LOGIN") ||
         process.env.OMNIROUTE_OIDC_DISABLE_PASSWORD_LOGIN === "true" ||
         process.env.OIDC_DISABLE_PASSWORD_LOGIN === "true");
+    const instanceName = typeof settings.instanceName === "string" ? settings.instanceName : "OmniRoute";
+    const customLogoUrl = typeof settings.customLogoUrl === "string" ? settings.customLogoUrl : "";
+    const customLogoBase64 = typeof settings.customLogoBase64 === "string" ? settings.customLogoBase64 : "";
     return NextResponse.json({
       authenticated,
       requireLogin,
@@ -61,6 +64,9 @@ export async function GET() {
       setupComplete,
       oidcEnabled,
       oidcDisablePasswordLogin,
+      instanceName,
+      customLogoUrl,
+      customLogoBase64,
       ...nodeInfo,
     });
   } catch (error) {

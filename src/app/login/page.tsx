@@ -15,6 +15,8 @@ export default function LoginPage() {
   const [setupComplete, setSetupComplete] = useState<boolean | null>(null);
   const [oidcEnabled, setOidcEnabled] = useState<boolean | null>(null);
   const [oidcDisablePasswordLogin, setOidcDisablePasswordLogin] = useState<boolean | null>(null);
+  const [appName, setAppName] = useState<string>("OmniRoute");
+  const [customLogo, setCustomLogo] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [nodeVersion, setNodeVersion] = useState(null);
   const [nodeCompatible, setNodeCompatible] = useState(true);
@@ -45,6 +47,10 @@ export default function LoginPage() {
           setSetupComplete(!!data.setupComplete);
           setOidcEnabled(!!data.oidcEnabled);
           setOidcDisablePasswordLogin(!!data.oidcDisablePasswordLogin);
+          if (data.instanceName) setAppName(data.instanceName);
+          if (data.customLogoBase64 || data.customLogoUrl) {
+            setCustomLogo(data.customLogoBase64 || data.customLogoUrl);
+          }
         } else {
           setHasPassword(true);
           setSetupComplete(true);
@@ -175,7 +181,7 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center text-xs text-text-muted/60 mt-8">
-            OmniRoute — {t("unifiedProxy")}
+            {appName} — {t("unifiedProxy")}
           </p>
         </div>
       </div>
@@ -215,7 +221,7 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center text-xs text-text-muted/60 mt-8">
-            OmniRoute — {t("unifiedAiApiProxy")}
+            {appName} — {t("unifiedAiApiProxy")}
           </p>
         </div>
       </div>
@@ -234,11 +240,19 @@ export default function LoginPage() {
           >
             <div className="mb-10">
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center">
-                  <span className="material-symbols-outlined text-white text-[20px]">hub</span>
-                </div>
+                {customLogo ? (
+                  <img
+                    src={customLogo}
+                    alt={appName}
+                    className="w-10 h-10 rounded-xl object-contain"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white text-[20px]">hub</span>
+                  </div>
+                )}
                 <span className="text-xl font-semibold text-text-main tracking-tight">
-                  OmniRoute
+                  {appName}
                 </span>
               </div>
               <h1 className="text-2xl font-bold text-text-main tracking-tight">{t("signIn")}</h1>

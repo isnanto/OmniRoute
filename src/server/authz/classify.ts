@@ -84,6 +84,15 @@ export function classifyRoute(rawPath: string, method: string = "GET"): RouteCla
     };
   }
 
+  // Public portal page for key holders to check personal quota & provider snapshots
+  if (normalizedPath === "/portal" || normalizedPath.startsWith("/portal/")) {
+    return {
+      routeClass: "PUBLIC",
+      reason: "public_portal_page",
+      normalizedPath,
+    };
+  }
+
   if (normalizedPath.startsWith("/dashboard")) {
     return {
       routeClass: "MANAGEMENT",
