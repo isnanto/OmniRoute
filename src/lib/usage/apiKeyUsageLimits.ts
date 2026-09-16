@@ -614,7 +614,36 @@ export async function buildApiKeyUsageLimitPolicyRejection(
   metadata: ApiKeyUsageLimitMetadata
 ): Promise<Response | null> {
   const status = await getApiKeyUsageLimitStatus(metadata);
-  if (!status.enabled || (!status.dailyExceeded && !status.weeklyExceeded)) return null;
+  if (!status.enabled) return null;
+
+  // Early warning trigger (80% - 99%)
+  const dailyPct = status.dailyLimitUsd
+    ? Math.round((status.dailySpentUsd / status.dailyLimitUsd) * 100)
+    : 0;
+  const weeklyPct = status.weeklyLimitUsd
+    ? Math.round((status.weeklySpentUsd / status.weeklyLimitUsd) * 100)
+    : 0;
+
+  if (
+    (!status.dailyExceeded && dailyPct >= 80) ||
+    (!status.weeklyExceeded && weeklyPct >= 80)
+  ) {
+    try {
+      const isDailyWarning = dailyPct >= 80;
+      const { notifyWebhookEvent } = await import("@/lib/webhookDispatcher");
+      notifyWebhookEvent("quota.warning", {
+        apiKeyId: metadata.id,
+        reason: isDailyWarning ? "daily-warning" : "weekly-warning",
+        spentUsd: isDailyWarning ? status.dailySpentUsd : status.weeklySpentUsd,
+        limitUsd: isDailyWarning ? status.dailyLimitUsd : status.weeklyLimitUsd,
+        percentage: isDailyWarning ? dailyPct : weeklyPct,
+      });
+    } catch {
+      // webhook is best-effort
+    }
+  }
+
+  if (!status.dailyExceeded && !status.weeklyExceeded) return null;
   try {
     const isDaily = status.dailyExceeded;
     const pct = isDaily

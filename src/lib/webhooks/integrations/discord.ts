@@ -17,6 +17,7 @@ const EVENT_COLORS: Partial<Record<WebhookEvent, number>> = {
   "request.completed": 0x22c55e,
   "request.failed": 0xef4444,
   "quota.exceeded": 0xeab308,
+  "quota.warning": 0xf59e0b,
   "test.ping": 0x8b5cf6,
 };
 

@@ -1,9 +1,15 @@
-export type WebhookEvent = "request.completed" | "request.failed" | "quota.exceeded" | "test.ping";
+export type WebhookEvent =
+  | "request.completed"
+  | "request.failed"
+  | "quota.exceeded"
+  | "quota.warning"
+  | "test.ping";
 
 export const WEBHOOK_EVENT_VALUES = [
   "request.completed",
   "request.failed",
   "quota.exceeded",
+  "quota.warning",
   "test.ping",
 ] as const;
 
@@ -43,6 +49,12 @@ export const EVENT_DESCRIPTIONS: Record<WebhookEvent, EventDescription> = {
     emoji: "📊",
     description: "A usage threshold (e.g. 95% of quota) was reached.",
     exampleData: { quota: "daily_tokens", used: 950000, limit: 1000000, pct: 95 },
+  },
+  "quota.warning": {
+    label: "Quota Warning (80%+)",
+    emoji: "⚠️",
+    description: "Usage has reached or exceeded 80% of personal limit.",
+    exampleData: { quota: "daily-limit", spentUsd: 8.5, limitUsd: 10, pct: 85 },
   },
   "test.ping": {
     label: "Test Ping",

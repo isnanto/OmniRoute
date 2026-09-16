@@ -70,12 +70,32 @@ export default function PortalPage() {
   const [rememberKey, setRememberKey] = useState(true);
   const [activeTab, setActiveTab] = useState<"claude" | "cursor" | "python" | "curl">("claude");
   const [copiedSnippet, setCopiedSnippet] = useState(false);
+  const [instanceName, setInstanceName] = useState<string>("OmniRoute");
+  const [customLogo, setCustomLogo] = useState<string | null>(null);
 
   const baseUrl = useMemo(() => {
     if (typeof window !== "undefined") {
       return window.location.origin;
     }
     return "http://localhost:20128";
+  }, []);
+
+  useEffect(() => {
+    async function loadBranding() {
+      try {
+        const res = await fetch("/api/settings/require-login", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.instanceName) setInstanceName(data.instanceName);
+          if (data.customLogoBase64 || data.customLogoUrl) {
+            setCustomLogo(data.customLogoBase64 || data.customLogoUrl);
+          }
+        }
+      } catch {
+        // fail silently, keep defaults
+      }
+    }
+    void loadBranding();
   }, []);
 
   const fetchUsage = useCallback(async (key: string) => {
@@ -183,18 +203,31 @@ print(response.choices[0].message.content)`,
       <div className="w-full max-w-4xl space-y-6">
         {/* Header */}
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                Portal Pengguna
-              </span>
+          <div className="flex items-center gap-3.5">
+            {customLogo ? (
+              <img
+                src={customLogo}
+                alt={instanceName}
+                className="w-12 h-12 rounded-xl object-contain border border-border bg-surface p-1"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-white text-[24px]">hub</span>
+              </div>
+            )}
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
+                  {instanceName} Portal
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight mt-0.5">
+                Utilitas & Kuota API Key
+              </h1>
+              <p className="text-text-muted text-xs sm:text-sm mt-0.5">
+                Pantau pemakaian token, alokasi model, dan panduan integrasi mandiri.
+              </p>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mt-1.5">
-              Utilitas & Kuota API Key
-            </h1>
-            <p className="text-text-muted text-sm mt-0.5">
-              Pantau pemakaian token, limit biaya, dan status kuota model AI secara mandiri.
-            </p>
           </div>
 
           {activeKey && (
