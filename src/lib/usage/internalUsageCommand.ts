@@ -539,6 +539,17 @@ function appendQuotaBlock(
  */
 /** Discriminated so the caller never reads a data field off a refusal:
  * `allowed:false` carries only `error`; `allowed:true` carries the data. */
+export interface UsageHistoryItem {
+  id: string;
+  model: string;
+  provider: string;
+  tokensInput: number;
+  tokensOutput: number;
+  latencyMs: number;
+  success: boolean;
+  timestamp: string;
+}
+
 export type UsageCommandJson =
   | { allowed: false; error: { message: string } }
   | {
@@ -551,6 +562,8 @@ export type UsageCommandJson =
         name: string;
         allowedModels: string[];
       };
+      /** Recent call history for this key */
+      recentCalls?: UsageHistoryItem[];
       /** The selected provider snapshot, or null when nothing is cached. */
       provider: UsageSnapshot | null;
       /** Every connection's snapshot, so a panel can render Codex / Claude /
@@ -583,7 +596,46 @@ export async function buildUsageCommandJson(
     name: metadata.name || "",
     allowedModels: Array.isArray(metadata.allowedModels) ? metadata.allowedModels : [],
   };
-  return { allowed: true, personal, keyInfo, provider, providers: snapshots };
+
+  let recentCalls: UsageHistoryItem[] = [];
+  try {
+    const { getDbInstance } = await import("@/lib/db/core");
+    const db = getDbInstance();
+    const rows = db
+      .prepare(
+        `SELECT id, model, provider, tokens_input AS tokensInput, tokens_output AS tokensOutput,
+                latency_ms AS latencyMs, success, timestamp
+         FROM usage_history
+         WHERE api_key_id = ?
+         ORDER BY timestamp DESC
+         LIMIT 15`
+      )
+      .all(metadata.id) as Array<{
+        id: string;
+        model: string;
+        provider: string;
+        tokensInput: number | null;
+        tokensOutput: number | null;
+        latencyMs: number | null;
+        success: number | boolean | null;
+        timestamp: string;
+      }>;
+
+    recentCalls = rows.map((r) => ({
+      id: r.id,
+      model: r.model || "unknown",
+      provider: r.provider || "unknown",
+      tokensInput: Number(r.tokensInput || 0),
+      tokensOutput: Number(r.tokensOutput || 0),
+      latencyMs: Number(r.latencyMs || 0),
+      success: Boolean(r.success),
+      timestamp: r.timestamp || new Date().toISOString(),
+    }));
+  } catch {
+    // best-effort history
+  }
+
+  return { allowed: true, personal, keyInfo, recentCalls, provider, providers: snapshots };
 }
 
 export async function buildUsageCommandText(

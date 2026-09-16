@@ -38,6 +38,17 @@ interface KeyInfo {
   allowedModels: string[];
 }
 
+interface RecentCall {
+  id: string;
+  model: string;
+  provider: string;
+  tokensInput: number;
+  tokensOutput: number;
+  latencyMs: number;
+  success: boolean;
+  timestamp: string;
+}
+
 interface UsageResponse {
   allowed: boolean;
   error?: {
@@ -45,6 +56,7 @@ interface UsageResponse {
   };
   personal?: PersonalQuota | null;
   keyInfo?: KeyInfo | null;
+  recentCalls?: RecentCall[];
   provider?: UsageSnapshot | null;
   providers?: UsageSnapshot[];
 }
@@ -161,6 +173,7 @@ export default function PortalPage() {
 
   const personal = usageData?.personal;
   const keyInfo = usageData?.keyInfo;
+  const recentCalls = usageData?.recentCalls || [];
   const providers = usageData?.providers || (usageData?.provider ? [usageData.provider] : []);
 
   const snippets = useMemo(() => {
@@ -349,6 +362,66 @@ print(response.choices[0].message.content)`,
                 <p className="text-xs text-text-muted">
                   Key ini memiliki izin penuh mengakses semua model (<code className="text-primary font-mono font-semibold">all models</code>) termasuk alias <code className="text-primary font-mono font-semibold">auto</code>.
                 </p>
+              )}
+            </section>
+
+            {/* Recent Calls History */}
+            <section className="rounded-xl border border-border bg-surface p-5 space-y-3 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-semibold">Riwayat Panggilan Terakhir</h2>
+                  <p className="text-xs text-text-muted mt-0.5">15 permintaan inferensi terakhir milik API Key ini.</p>
+                </div>
+                <span className="text-xs font-mono text-text-muted">{recentCalls.length} aktivitas</span>
+              </div>
+
+              {recentCalls.length === 0 ? (
+                <div className="p-4 rounded-lg bg-bg border border-border text-center text-xs text-text-muted">
+                  Belum ada riwayat panggilan tercatat untuk API Key ini.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-border text-text-muted">
+                        <th className="pb-2 font-medium">Waktu</th>
+                        <th className="pb-2 font-medium">Model</th>
+                        <th className="pb-2 font-medium">Provider</th>
+                        <th className="pb-2 font-medium text-right">Tokens In / Out</th>
+                        <th className="pb-2 font-medium text-right">Latency</th>
+                        <th className="pb-2 font-medium text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {recentCalls.map((call) => (
+                        <tr key={call.id} className="hover:bg-bg-alt/50 transition-colors">
+                          <td className="py-2.5 text-text-muted">
+                            {new Date(call.timestamp).toLocaleTimeString()}
+                          </td>
+                          <td className="py-2.5 font-mono text-text-main">{call.model}</td>
+                          <td className="py-2.5 capitalize text-text-muted">{call.provider}</td>
+                          <td className="py-2.5 text-right font-mono">
+                            {call.tokensInput} / {call.tokensOutput}
+                          </td>
+                          <td className="py-2.5 text-right font-mono text-text-muted">
+                            {call.latencyMs}ms
+                          </td>
+                          <td className="py-2.5 text-right">
+                            {call.success ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                Sukses
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/10 text-red-500 border border-red-500/20">
+                                Gagal
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </section>
 
