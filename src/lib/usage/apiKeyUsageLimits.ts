@@ -615,6 +615,24 @@ export async function buildApiKeyUsageLimitPolicyRejection(
 ): Promise<Response | null> {
   const status = await getApiKeyUsageLimitStatus(metadata);
   if (!status.enabled || (!status.dailyExceeded && !status.weeklyExceeded)) return null;
+  try {
+    const isDaily = status.dailyExceeded;
+    const pct = isDaily
+      ? Math.round((status.dailySpentUsd / (status.dailyLimitUsd || 1)) * 100)
+      : Math.round((status.weeklySpentUsd / (status.weeklyLimitUsd || 1)) * 100);
+
+    const { notifyWebhookEvent } = await import("@/lib/webhookDispatcher");
+    notifyWebhookEvent("quota.exceeded", {
+      apiKeyId: metadata.id,
+      reason: isDaily ? "daily-limit" : "weekly-limit",
+      spentUsd: isDaily ? status.dailySpentUsd : status.weeklySpentUsd,
+      limitUsd: isDaily ? status.dailyLimitUsd : status.weeklyLimitUsd,
+      percentage: pct,
+    });
+  } catch {
+    // webhook is best-effort
+  }
+
   return buildApiKeyUsageLimitRejection(request, status, Date.now(), {
     showUsd: false,
   });

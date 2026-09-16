@@ -226,7 +226,7 @@ export default function ApiManagerPageClient() {
   const [newKeyManageEnabled, setNewKeyManageEnabled] = useState(false);
   const [newKeySelfUsageEnabled, setNewKeySelfUsageEnabled] = useState(true);
   const [newKeyAccountQuotaEnabled, setNewKeyAccountQuotaEnabled] = useState(false);
-  const [newKeyAllowUsageCommand, setNewKeyAllowUsageCommand] = useState(false);
+  const [newKeyAllowUsageCommand, setNewKeyAllowUsageCommand] = useState(true);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);

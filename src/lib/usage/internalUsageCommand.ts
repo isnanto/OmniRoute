@@ -16,6 +16,7 @@ type JsonRecord = Record<string, unknown>;
 export interface UsageCommandApiKeyMetadata {
   id: string;
   name?: string;
+  allowedModels?: string[] | null;
   allowedConnections?: string[] | null;
   preferredProvider?: string | null;
   allowUsageCommand?: boolean;
@@ -544,6 +545,12 @@ export type UsageCommandJson =
       allowed: true;
       /** Present only when the key opted into per-key usage limits. */
       personal: unknown | null;
+      /** Key information and allowed models */
+      keyInfo?: {
+        id: string;
+        name: string;
+        allowedModels: string[];
+      };
       /** The selected provider snapshot, or null when nothing is cached. */
       provider: UsageSnapshot | null;
       /** Every connection's snapshot, so a panel can render Codex / Claude /
@@ -571,7 +578,12 @@ export async function buildUsageCommandJson(
       : null;
   const snapshots = await collectUsageSnapshots(metadata, resolvedDeps);
   const provider = selectUsageSnapshot(snapshots, selection);
-  return { allowed: true, personal, provider, providers: snapshots };
+  const keyInfo = {
+    id: metadata.id,
+    name: metadata.name || "",
+    allowedModels: Array.isArray(metadata.allowedModels) ? metadata.allowedModels : [],
+  };
+  return { allowed: true, personal, keyInfo, provider, providers: snapshots };
 }
 
 export async function buildUsageCommandText(

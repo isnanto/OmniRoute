@@ -698,7 +698,7 @@ export async function createApiKey(
     allowedCombos,
     allowedConnections,
     noLog: false,
-    allowUsageCommand: false,
+    allowUsageCommand: true,
     createdAt: now,
     scopes,
   };

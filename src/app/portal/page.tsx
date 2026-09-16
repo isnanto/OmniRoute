@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { Spinner } from "@/shared/components/Loading";
 
 interface PersonalQuota {
@@ -32,12 +32,19 @@ interface UsageSnapshot {
   quotas: Record<string, QuotaItem | undefined>;
 }
 
+interface KeyInfo {
+  id: string;
+  name: string;
+  allowedModels: string[];
+}
+
 interface UsageResponse {
   allowed: boolean;
   error?: {
     message: string;
   };
   personal?: PersonalQuota | null;
+  keyInfo?: KeyInfo | null;
   provider?: UsageSnapshot | null;
   providers?: UsageSnapshot[];
 }
@@ -61,6 +68,15 @@ export default function PortalPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [usageData, setUsageData] = useState<UsageResponse | null>(null);
   const [rememberKey, setRememberKey] = useState(true);
+  const [activeTab, setActiveTab] = useState<"claude" | "cursor" | "python" | "curl">("claude");
+  const [copiedSnippet, setCopiedSnippet] = useState(false);
+
+  const baseUrl = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return window.location.origin;
+    }
+    return "http://localhost:20128";
+  }, []);
 
   const fetchUsage = useCallback(async (key: string) => {
     setLoading(true);
@@ -117,8 +133,50 @@ export default function PortalPage() {
     setErrorMsg(null);
   };
 
+  const handleCopy = (text: string) => {
+    void navigator.clipboard.writeText(text);
+    setCopiedSnippet(true);
+    setTimeout(() => setCopiedSnippet(false), 2000);
+  };
+
   const personal = usageData?.personal;
+  const keyInfo = usageData?.keyInfo;
   const providers = usageData?.providers || (usageData?.provider ? [usageData.provider] : []);
+
+  const snippets = useMemo(() => {
+    const key = activeKey || "YOUR_API_KEY";
+    return {
+      claude: `# 1. Pasang Environment Variable
+export ANTHROPIC_BASE_URL="${baseUrl}/v1"
+export ANTHROPIC_API_KEY="${key}"
+
+# 2. Jalankan Claude Code CLI
+claude`,
+      cursor: `// Di Settings > Models > OpenAI API Key & Base URL:
+Base URL: ${baseUrl}/v1
+API Key : ${key}
+Model   : auto (atau model yang diizinkan)`,
+      python: `from openai import OpenAI
+
+client = OpenAI(
+    base_url="${baseUrl}/v1",
+    api_key="${key}",
+)
+
+response = client.chat.completions.create(
+    model="auto",
+    messages=[{"role": "user", "content": "Halo AI!"}],
+)
+print(response.choices[0].message.content)`,
+      curl: `curl ${baseUrl}/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${key}" \\
+  -d '{
+    "model": "auto",
+    "messages": [{"role": "user", "content": "Halo!"}]
+  }'`,
+    };
+  }, [activeKey, baseUrl]);
 
   return (
     <main className="min-h-screen text-text-main p-4 sm:p-8 flex flex-col items-center justify-start">
@@ -221,11 +279,14 @@ export default function PortalPage() {
         {activeKey && usageData && (
           <div className="space-y-6">
             {/* Key Information Banner */}
-            <div className="rounded-xl border border-border bg-surface p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="rounded-xl border border-border bg-surface p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-wide text-text-muted">Kredensial Aktif</p>
-                <p className="font-mono text-sm mt-0.5">
-                  ••••••••••••{activeKey.slice(-6)}
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-base">{keyInfo?.name || "API Key User"}</span>
+                  <span className="text-xs font-mono text-text-muted">({keyInfo?.id?.slice(0, 8)})</span>
+                </div>
+                <p className="font-mono text-xs text-text-muted mt-1">
+                  Kredensial: ••••••••••••{activeKey.slice(-6)}
                 </p>
               </div>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 w-fit">
@@ -233,6 +294,30 @@ export default function PortalPage() {
                 Key Terverifikasi
               </span>
             </div>
+
+            {/* Allowed Models Badge Section */}
+            <section className="rounded-xl border border-border bg-surface p-5 space-y-3 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold">Model AI yang Diizinkan</h2>
+                <span className="text-xs text-text-muted">Akses Model</span>
+              </div>
+              {keyInfo && keyInfo.allowedModels && keyInfo.allowedModels.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {keyInfo.allowedModels.map((m, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2.5 py-1 rounded-lg text-xs font-mono bg-bg border border-border text-text-main"
+                    >
+                      {m}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-text-muted">
+                  Key ini memiliki izin penuh mengakses semua model (<code className="text-primary font-mono font-semibold">all models</code>) termasuk alias <code className="text-primary font-mono font-semibold">auto</code>.
+                </p>
+              )}
+            </section>
 
             {/* Personal Quota Card (Jika diaktifkan) */}
             {personal && personal.enabled ? (
@@ -356,6 +441,47 @@ export default function PortalPage() {
                   })}
                 </div>
               )}
+            </section>
+
+            {/* Quickstart Integration Snippets */}
+            <section className="rounded-xl border border-border bg-surface p-6 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold">Panduan Integrasi Cepat</h2>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    Gunakan konfigurasi di bawah ini untuk menghubungkan coding agent atau aplikasi Anda.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopy(snippets[activeTab])}
+                  className="px-3 py-1.5 rounded-lg border border-border bg-bg text-xs font-medium hover:bg-bg-alt transition-colors inline-flex items-center gap-1.5"
+                >
+                  {copiedSnippet ? "Tersalin!" : "Salin Kode"}
+                </button>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex border-b border-border gap-2 text-xs">
+                {(["claude", "cursor", "python", "curl"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`pb-2 px-2 font-medium capitalize border-b-2 transition-colors ${
+                      activeTab === tab
+                        ? "border-primary text-primary"
+                        : "border-transparent text-text-muted hover:text-text-main"
+                    }`}
+                  >
+                    {tab === "claude" ? "Claude Code" : tab === "cursor" ? "Cursor IDE" : tab}
+                  </button>
+                ))}
+              </div>
+
+              {/* Snippet Code Box */}
+              <pre className="p-4 rounded-lg bg-bg border border-border font-mono text-xs overflow-x-auto text-text-main whitespace-pre-wrap leading-relaxed">
+                {snippets[activeTab]}
+              </pre>
             </section>
           </div>
         )}

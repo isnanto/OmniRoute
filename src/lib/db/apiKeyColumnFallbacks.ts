@@ -36,7 +36,7 @@ export const API_KEY_COLUMN_FALLBACKS = [
   },
   {
     name: "allow_usage_command",
-    definition: "allow_usage_command INTEGER NOT NULL DEFAULT 0",
+    definition: "allow_usage_command INTEGER NOT NULL DEFAULT 1",
   },
   {
     name: "usage_limit_enabled",
