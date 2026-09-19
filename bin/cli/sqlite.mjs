@@ -12,7 +12,9 @@ async function loadSqlite() {
     }
   }
   try {
-    return { Database: (await import("better-sqlite3")).default, driver: "better-sqlite3" };
+    const { runtimeRequire } = await import("../../src/lib/db/adapters/runtimeRequire.ts");
+    const mod = runtimeRequire("better-sqlite3");
+    return { Database: mod.default || mod, driver: "better-sqlite3" };
   } catch (error) {
     return { error };
   }
