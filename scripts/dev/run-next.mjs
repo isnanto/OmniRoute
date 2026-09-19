@@ -46,7 +46,7 @@ if (fs.existsSync(rootAppDir) && fs.statSync(rootAppDir).isDirectory()) {
   process.exit(1);
 }
 
-const mode = process.argv[2] === "start" ? "start" : "dev";
+const mode = process.env.NODE_ENV === "production" || process.argv[2] === "start" ? "start" : "dev";
 const dev = mode === "dev";
 
 // Self-heal a stale better-sqlite3 native binary after a Node version switch
