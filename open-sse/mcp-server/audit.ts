@@ -222,9 +222,8 @@ async function openBetterSqliteAuditDb(dbPath: string): Promise<AuditDatabase> {
   if (betterSqliteLoaderForTests) {
     mod = betterSqliteLoaderForTests();
   } else {
-    const { createRequire } = await import("node:module");
-    const _require = createRequire(import.meta.url);
-    mod = _require("better-sqlite3");
+    const { runtimeRequire } = await import("../../src/lib/db/adapters/runtimeRequire.ts");
+    mod = runtimeRequire("better-sqlite3");
   }
   const Database = ((mod as { default?: unknown })?.default || mod) as unknown as new (
     dbPath: string
