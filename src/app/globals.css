@@ -21,6 +21,15 @@
 @source "../shared";
 @source "../../node_modules/fumadocs-ui/dist/**/*.js";
 
+/* Sembunyikan Next.js dev indicator toast di pojok kiri bawah */
+nextjs-portal,
+[data-nextjs-toast],
+[data-nextjs-dialog-overlay],
+#__next-build-watcher {
+  display: none !important;
+  visibility: hidden !important;
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Fumadocs sidebar width override */

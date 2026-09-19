@@ -221,6 +221,7 @@ const nextConfig = {
     ],
   },
   ...(isContributorBuild ? {} : { output: "standalone" }),
+  devIndicators: false,
   compress: true,
   productionBrowserSourceMaps: false,
   // Issue #67: enable React Compiler — automates memoization, removes manual useCallback/useMemo debt.
