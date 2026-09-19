@@ -79,7 +79,8 @@ export async function loadSqliteRuntime() {
 
 async function tryLoadBundled() {
   try {
-    const mod = await import("better-sqlite3");
+    const { runtimeRequire } = await import("../../../src/lib/db/adapters/runtimeRequire.ts");
+    const mod = runtimeRequire("better-sqlite3");
     return { kind: "better-sqlite3", Database: mod.default ?? mod };
   } catch {
     return null;
