@@ -55,6 +55,7 @@ export interface PassthroughModelRowProps {
 export default function PassthroughModelRow({
   modelId,
   fullModel,
+  provider,
   alias,
   displayName,
   source,
@@ -68,19 +69,23 @@ export default function PassthroughModelRow({
   showDeveloperToggle = true,
   effectiveModelNormalize,
   effectiveModelPreserveDeveloper,
-  getUpstreamHeadersRecord,
   saveModelCompatFlags,
-  provider,
-  compatDisabled,
+  getUpstreamHeadersRecord,
+  compatDisabled = false,
   onToggleHidden,
-  togglingHidden,
+  togglingHidden = false,
   onTestModel,
-  testStatus,
-  testingModel,
+  testStatus = null,
+  testingModel = false,
 }: PassthroughModelRowProps) {
   const [editing, setEditing] = useState(false);
   const [aliasValue, setAliasValue] = useState(alias || "");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync aliasValue when prop changes from parent re-fetch
+  useEffect(() => {
+    setAliasValue(alias || "");
+  }, [alias]);
 
   // Only useful when it actually differs from the id — otherwise we would just print
   // the opaque id twice.

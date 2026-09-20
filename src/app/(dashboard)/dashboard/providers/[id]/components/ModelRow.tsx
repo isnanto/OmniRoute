@@ -309,6 +309,11 @@ export default function ModelRow({
   const [aliasValue, setAliasValue] = useState(alias || "");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Sync aliasValue when prop changes from parent re-fetch
+  useEffect(() => {
+    setAliasValue(alias || "");
+  }, [alias]);
+
   useEffect(() => {
     if (editing && inputRef.current) {
       inputRef.current.focus();
