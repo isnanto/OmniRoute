@@ -454,7 +454,7 @@ export default function PassthroughModelsSection({
                 copied={copied}
                 onCopy={onCopy}
                 onDeleteAlias={source === "alias" && alias ? () => onDeleteAlias(alias) : undefined}
-                onSetAlias={(a) => onSetAlias(modelId, a)}
+                onSetAlias={(a) => onSetAlias(modelId, a, providerAlias)}
                 t={t}
                 showDeveloperToggle
                 effectiveModelNormalize={effectiveModelNormalize}

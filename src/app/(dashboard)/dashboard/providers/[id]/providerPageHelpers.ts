@@ -506,7 +506,7 @@ export function buildCompatMap(rows: CompatModelRow[]): CompatModelMap {
 
 export function getDisplayModelAlias(modelId: string, alias?: string | null): string | null {
   const trimmed = typeof alias === "string" ? alias.trim() : "";
-  if (!trimmed || trimmed === modelId) return null;
+  if (!trimmed) return null;
   return trimmed;
 }
 

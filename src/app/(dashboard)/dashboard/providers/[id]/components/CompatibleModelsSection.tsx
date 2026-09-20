@@ -166,7 +166,14 @@ export default function CompatibleModelsSection({
         modelId = fmStr.split("/").pop() || fmStr;
       }
       const displayAlias = getDisplayModelAlias(modelId, alias as string);
-      if (displayAlias) aliasByModelId.set(modelId, displayAlias);
+      if (displayAlias) {
+        aliasByModelId.set(modelId, displayAlias);
+        // Simpan juga versi fullModel dan raw model jika ada perbedaan
+        aliasByModelId.set(fmStr, displayAlias);
+        if (fmStr.includes("/")) {
+          aliasByModelId.set(fmStr.split("/").slice(1).join("/"), displayAlias);
+        }
+      }
     }
 
     const addModel = (model: CompatModelRow, source: string) => {
