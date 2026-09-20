@@ -63,20 +63,26 @@ export function useProviderModels(
 
   const handleSetAlias = useCallback(
     async (modelId: string, alias: string, providerAlias?: string) => {
-      const qualifiedModel = providerAlias
-        ? modelId.includes("/")
-          ? `${providerAlias}/${modelId.split("/").slice(1).join("/")}`
-          : `${providerAlias}/${modelId}`
-        : modelId;
+      // Pastikan alias bersih dan model target memiliki format lengkap (full identifier)
+      const cleanAlias = alias.trim();
+      if (!cleanAlias) return;
+
+      let targetModel = modelId.trim();
+      if (providerAlias && !targetModel.startsWith(`${providerAlias}/`)) {
+        targetModel = `${providerAlias}/${targetModel}`;
+      }
+
       try {
         const res = await fetch("/api/models/alias", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: qualifiedModel, alias }),
+          body: JSON.stringify({ model: targetModel, alias: cleanAlias }),
         });
         if (res.ok) {
+          // Update state lokal seketika agar tidak kedip/hilang sebelum re-fetch
+          setModelAliases((prev) => ({ ...prev, [cleanAlias]: targetModel }));
           await fetchAliases();
-          notify.success(t("setAliasSuccess", { alias }));
+          notify.success(t("setAliasSuccess", { alias: cleanAlias }));
         } else {
           const data = await res.json().catch(() => ({}));
           notify.error(

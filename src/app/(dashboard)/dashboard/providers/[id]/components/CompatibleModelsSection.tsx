@@ -134,13 +134,16 @@ export default function CompatibleModelsSection({
   const providerAliases = useMemo(
     () =>
       Object.entries(modelAliases).filter(([, model]: [string, any]) =>
-        (model as string).startsWith(`${providerStorageAlias}/`)
+        (model as string).startsWith(`${providerStorageAlias}/`) ||
+        (model as string).startsWith(`${providerDisplayAlias}/`) ||
+        (providerDisplayAlias && (model as string).includes(`/${providerDisplayAlias}/`))
       ),
-    [modelAliases, providerStorageAlias]
+    [modelAliases, providerDisplayAlias, providerStorageAlias]
   );
 
   const allModels = useMemo(() => {
-    const prefix = `${providerStorageAlias}/`;
+    const storagePrefix = `${providerStorageAlias}/`;
+    const displayPrefix = `${providerDisplayAlias}/`;
     const aliasByModelId = new Map<string, string>();
     const rows: Array<{
       modelId: string;
@@ -154,7 +157,14 @@ export default function CompatibleModelsSection({
 
     for (const [alias, fullModel] of providerAliases) {
       const fmStr = fullModel as string;
-      const modelId = fmStr.startsWith(prefix) ? fmStr.slice(prefix.length) : fmStr;
+      let modelId = fmStr;
+      if (fmStr.startsWith(storagePrefix)) {
+        modelId = fmStr.slice(storagePrefix.length);
+      } else if (fmStr.startsWith(displayPrefix)) {
+        modelId = fmStr.slice(displayPrefix.length);
+      } else if (fmStr.includes("/")) {
+        modelId = fmStr.split("/").pop() || fmStr;
+      }
       const displayAlias = getDisplayModelAlias(modelId, alias as string);
       if (displayAlias) aliasByModelId.set(modelId, displayAlias);
     }
@@ -198,7 +208,14 @@ export default function CompatibleModelsSection({
 
     for (const [alias, fullModel] of providerAliases) {
       const fmStr = fullModel as string;
-      const modelId = fmStr.startsWith(prefix) ? fmStr.slice(prefix.length) : fmStr;
+      let modelId = fmStr;
+      if (fmStr.startsWith(storagePrefix)) {
+        modelId = fmStr.slice(storagePrefix.length);
+      } else if (fmStr.startsWith(displayPrefix)) {
+        modelId = fmStr.slice(displayPrefix.length);
+      } else if (fmStr.includes("/")) {
+        modelId = fmStr.split("/").pop() || fmStr;
+      }
       if (!modelId || seenModelIds.has(modelId)) continue;
       const displayAlias = getDisplayModelAlias(modelId, alias as string);
       if (!displayAlias) continue;
@@ -463,7 +480,7 @@ export default function CompatibleModelsSection({
                         ? () => onDeleteAlias(alias)
                         : undefined
                   }
-                  onSetAlias={(a) => onSetAlias(modelId, a, providerStorageAlias)}
+                  onSetAlias={(a) => onSetAlias(modelId, a, providerDisplayAlias)}
                   t={t}
                   showDeveloperToggle={!isAnthropic}
                   effectiveModelNormalize={effectiveModelNormalize}
