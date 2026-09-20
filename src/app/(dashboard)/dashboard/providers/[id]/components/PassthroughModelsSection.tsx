@@ -239,7 +239,12 @@ export default function PassthroughModelsSection({
 
     for (const [alias, fullModel] of providerAliases) {
       const fmStr = fullModel as string;
-      const modelId = fmStr.startsWith(prefix) ? fmStr.slice(prefix.length) : fmStr;
+      let modelId = fmStr;
+      if (fmStr.startsWith(prefix)) {
+        modelId = fmStr.slice(prefix.length);
+      } else if (fmStr.includes("/")) {
+        modelId = fmStr.split("/").pop() || fmStr;
+      }
       const displayAlias = getDisplayModelAlias(modelId, alias as string);
       if (displayAlias) aliasByModelId.set(modelId, displayAlias);
       fullModelByModelId.set(modelId, fmStr);

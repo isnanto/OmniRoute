@@ -412,12 +412,16 @@ export default function ProviderModelsSection({
 
   const aliasByModelId = Object.entries(modelAliases).reduce<Record<string, string>>(
     (acc, [alias, fullModel]) => {
+      const fm = String(fullModel || "");
       const prefix = `${providerDisplayAlias}/`;
-      if (fullModel.startsWith(prefix)) {
-        const modelId = fullModel.slice(prefix.length);
-        const displayAlias = getDisplayModelAlias(modelId, alias);
-        if (displayAlias) acc[modelId] = displayAlias;
+      let modelId = fm;
+      if (fm.startsWith(prefix)) {
+        modelId = fm.slice(prefix.length);
+      } else if (fm.includes("/")) {
+        modelId = fm.split("/").pop() || fm;
       }
+      const displayAlias = getDisplayModelAlias(modelId, alias);
+      if (displayAlias) acc[modelId] = displayAlias;
       return acc;
     },
     {}
