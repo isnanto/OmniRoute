@@ -133,11 +133,18 @@ export default function CompatibleModelsSection({
 
   const providerAliases = useMemo(
     () =>
-      Object.entries(modelAliases).filter(([, model]: [string, any]) =>
-        (model as string).startsWith(`${providerStorageAlias}/`) ||
-        (model as string).startsWith(`${providerDisplayAlias}/`) ||
-        (providerDisplayAlias && (model as string).includes(`/${providerDisplayAlias}/`))
-      ),
+      Object.entries(modelAliases).filter(([, model]: [string, any]) => {
+        const m = String(model || "");
+        return (
+          m.startsWith(`${providerStorageAlias}/`) ||
+          m.startsWith(`${providerDisplayAlias}/`) ||
+          m.startsWith("petirs/") ||
+          m.includes("openai-compatible-chat-") ||
+          (providerDisplayAlias && m.includes(`/${providerDisplayAlias}/`)) ||
+          m.includes("/amanai/") ||
+          m.includes("/glm-")
+        );
+      }),
     [modelAliases, providerDisplayAlias, providerStorageAlias]
   );
 
@@ -157,30 +164,48 @@ export default function CompatibleModelsSection({
 
     for (const [alias, fullModel] of providerAliases) {
       const fmStr = fullModel as string;
-      let modelId = fmStr;
+      const displayAlias = alias as string;
+      // Map ke semua kemungkinan bentuk modelId:
+      // 1. fmStr asli (mis. openai-compatible-.../amanai/glm-5.3 atau openai-compatible-.../glm-5.3)
+      aliasByModelId.set(fmStr, displayAlias);
+
+      // 2. Tanpa storagePrefix (mis. amanai/glm-5.3 atau glm-5.3)
       if (fmStr.startsWith(storagePrefix)) {
-        modelId = fmStr.slice(storagePrefix.length);
-      } else if (fmStr.startsWith(displayPrefix)) {
-        modelId = fmStr.slice(displayPrefix.length);
-      } else if (fmStr.includes("/")) {
-        modelId = fmStr.split("/").pop() || fmStr;
-      }
-      const displayAlias = getDisplayModelAlias(modelId, alias as string);
-      if (displayAlias) {
-        aliasByModelId.set(modelId, displayAlias);
-        // Simpan juga versi fullModel dan raw model jika ada perbedaan
-        aliasByModelId.set(fmStr, displayAlias);
-        if (fmStr.includes("/")) {
-          aliasByModelId.set(fmStr.split("/").slice(1).join("/"), displayAlias);
+        const withoutStorage = fmStr.slice(storagePrefix.length);
+        aliasByModelId.set(withoutStorage, displayAlias);
+        if (withoutStorage.includes("/")) {
+          aliasByModelId.set(withoutStorage.split("/").pop() || withoutStorage, displayAlias);
         }
+      }
+
+      // 3. Tanpa displayPrefix
+      if (fmStr.startsWith(displayPrefix)) {
+        const withoutDisplay = fmStr.slice(displayPrefix.length);
+        aliasByModelId.set(withoutDisplay, displayAlias);
+        if (withoutDisplay.includes("/")) {
+          aliasByModelId.set(withoutDisplay.split("/").pop() || withoutDisplay, displayAlias);
+        }
+      }
+
+      // 4. Ekor nama model murni (mis. glm-5.3)
+      if (fmStr.includes("/")) {
+        aliasByModelId.set(fmStr.split("/").pop() || fmStr, displayAlias);
       }
     }
 
     const addModel = (model: CompatModelRow, source: string) => {
       if (!model?.id || seenModelIds.has(model.id)) return;
+      const cleanId = model.id.includes("/") ? model.id.split("/").pop() || model.id : model.id;
+      const matchedAlias =
+        aliasByModelId.get(model.id) ||
+        aliasByModelId.get(cleanId) ||
+        aliasByModelId.get(`amanai/${cleanId}`) ||
+        aliasByModelId.get(`${providerStorageAlias}/${model.id}`) ||
+        aliasByModelId.get(`${providerStorageAlias}/${cleanId}`) ||
+        null;
       rows.push({
         modelId: model.id,
-        alias: aliasByModelId.get(model.id) || null,
+        alias: matchedAlias,
         displayName: model.name || model.id,
         source,
         isFree: isModelFreeBadge(

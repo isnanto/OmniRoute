@@ -239,15 +239,19 @@ export default function PassthroughModelsSection({
 
     for (const [alias, fullModel] of providerAliases) {
       const fmStr = fullModel as string;
-      let modelId = fmStr;
+      const displayAlias = alias as string;
+      aliasByModelId.set(fmStr, displayAlias);
       if (fmStr.startsWith(prefix)) {
-        modelId = fmStr.slice(prefix.length);
-      } else if (fmStr.includes("/")) {
-        modelId = fmStr.split("/").pop() || fmStr;
+        const withoutPrefix = fmStr.slice(prefix.length);
+        aliasByModelId.set(withoutPrefix, displayAlias);
+        if (withoutPrefix.includes("/")) {
+          aliasByModelId.set(withoutPrefix.split("/").pop() || withoutPrefix, displayAlias);
+        }
       }
-      const displayAlias = getDisplayModelAlias(modelId, alias as string);
-      if (displayAlias) aliasByModelId.set(modelId, displayAlias);
-      fullModelByModelId.set(modelId, fmStr);
+      if (fmStr.includes("/")) {
+        aliasByModelId.set(fmStr.split("/").pop() || fmStr, displayAlias);
+      }
+      fullModelByModelId.set(fmStr, fmStr);
     }
 
     const addModel = (model: CompatModelRow, source: string) => {
