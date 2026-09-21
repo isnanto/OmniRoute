@@ -2670,6 +2670,31 @@ export async function handleChatCore({
       finalModelToUpstream = finalModelToUpstream.slice(alias.length + 1);
     }
   }
+
+  // Compatible provider nodes (e.g. Amanai) require vendor prefix (e.g. "amanai/gpt-5.6-sol").
+  // If upstream catalog model has a vendor prefix that was stripped, restore it.
+  try {
+    const psd = credentials?.providerSpecificData;
+    if (
+      typeof psd === "object" &&
+      psd !== null &&
+      (provider.startsWith("openai-compatible-") || provider.startsWith("anthropic-compatible-"))
+    ) {
+      const liveCatalog = credentials?.providerSpecificData?.models || [];
+      // Also check synced available models
+      const { getSyncedAvailableModels } = await import("@/lib/db/models/activeSyncedCatalog");
+      const syncedModels = await getSyncedAvailableModels(provider).catch(() => []);
+      const allCandidates = [...(Array.isArray(liveCatalog) ? liveCatalog : []), ...(Array.isArray(syncedModels) ? syncedModels : [])];
+      for (const m of allCandidates) {
+        const id = typeof m === "string" ? m : m?.id;
+        if (typeof id === "string" && id.includes("/") && id.endsWith(`/${finalModelToUpstream}`)) {
+          finalModelToUpstream = id;
+          break;
+        }
+      }
+    }
+  } catch {}
+
   translatedBody.model = finalModelToUpstream;
 
   // #3554: a combo/route may substitute the upstream model AFTER the client chose its
