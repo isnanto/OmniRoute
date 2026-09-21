@@ -353,6 +353,25 @@ async function getModelPermissionCandidates(modelId: string): Promise<string[]> 
         resolveProviderId,
         getProviderAlias
       );
+
+      // Support custom compatible provider nodes (e.g. openai-compatible-chat-... -> prefix "petirs")
+      try {
+        const { getCachedProviderNodes } = await import("@/lib/db/readCache");
+        const nodes = (await getCachedProviderNodes()) as Array<{ id?: string; prefix?: string }>;
+        const matchedNode = nodes.find(n => n.id === providerOrAlias || n.prefix === providerOrAlias);
+        if (matchedNode) {
+          if (matchedNode.prefix) {
+            addModelCandidate(candidates, `${matchedNode.prefix}/${providerScopedModel}`);
+            const lastPart = providerScopedModel.split("/").pop();
+            if (lastPart) {
+              addModelCandidate(candidates, `${matchedNode.prefix}/${lastPart}`);
+            }
+          }
+          if (matchedNode.id) {
+            addModelCandidate(candidates, `${matchedNode.id}/${providerScopedModel}`);
+          }
+        }
+      } catch {}
     }
     return Array.from(candidates);
   }
