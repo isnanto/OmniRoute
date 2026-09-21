@@ -373,6 +373,25 @@ async function getModelPermissionCandidates(modelId: string): Promise<string[]> 
         }
       } catch {}
     }
+
+    // Support matching against configured model aliases in DB
+    try {
+      const { getModelAliases } = await import("@/lib/db/models/aliases");
+      const aliases = await getModelAliases();
+      for (const [aliasKey, aliasVal] of Object.entries(aliases)) {
+        if (typeof aliasVal === "string") {
+          if (aliasVal === cleanModelId || aliasVal === modelId) {
+            addModelCandidate(candidates, aliasKey);
+          }
+          const lastPart = cleanModelId.split("/").pop();
+          if (lastPart && aliasVal.endsWith(`/${lastPart}`)) {
+            addModelCandidate(candidates, aliasKey);
+            addModelCandidate(candidates, lastPart);
+          }
+        }
+      }
+    } catch {}
+
     return Array.from(candidates);
   }
 

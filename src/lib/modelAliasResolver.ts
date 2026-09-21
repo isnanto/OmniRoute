@@ -56,7 +56,14 @@ export async function resolveModelAliasWithSeedFallback(
   if (existingCombo) return model;
 
   const aliases = await loadAliases();
-  const target = aliases[model] ?? (DEFAULT_MODEL_ALIAS_SEED as Record<string, unknown>)[model];
+  let target = aliases[model] ?? (DEFAULT_MODEL_ALIAS_SEED as Record<string, unknown>)[model];
+
+  // If not found and model has a provider prefix (e.g. "petirs/gpt-5.6-sol"),
+  // try matching without the prefix against aliases
+  if (target === undefined && model.includes("/")) {
+    const withoutPrefix = model.slice(model.indexOf("/") + 1);
+    target = aliases[withoutPrefix];
+  }
 
   if (target === undefined) return model;
 
