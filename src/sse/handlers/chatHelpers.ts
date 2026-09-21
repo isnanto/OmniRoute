@@ -483,7 +483,13 @@ export async function executeChatWithBreaker({
       capture(() =>
         runWithProxyContext(proxyInfo?.proxy || null, () =>
           (handleChatCore as any)({
-            body: { ...body, model: `${provider}/${model}` },
+            body: {
+              ...body,
+              model:
+                provider && provider.startsWith("openai-compatible-") && model && !model.includes("/")
+                  ? `amanai/${model}`
+                  : `${provider}/${model}`,
+            },
             // #2905-followup: forward the already-resolved custom-model targetFormat
             // override through as modelInfo.targetFormat. Without this, chatCore.ts's
             // own resolveChatCoreRequestSetup() reads customModelTargetFormat off THIS
