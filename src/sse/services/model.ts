@@ -226,13 +226,22 @@ function findSyncedModelMeta(models: unknown, modelId: string): any {
   const direct = models.find((model: any) => model?.id === modelId);
   if (direct) return direct;
 
-  // 2. Jika modelId tidak mengandung prefix internal (mis. qwen3.8-max)
-  // tetapi di synced models tersimpan dengan prefix (mis. amanai/qwen3.8-max)
+  // 2. Jika modelId tidak mengandung prefix internal (mis. qwen3.8-max atau gpt-5.6-sol)
+  // tetapi di synced models tersimpan dengan prefix (mis. amanai/qwen3.8-max atau amanai/gpt-5.6-sol)
   return models.find((model: any) => {
     if (typeof model?.id !== "string") return false;
     const parts = model.id.split("/");
     return parts[parts.length - 1] === modelId;
   });
+}
+
+function resolveSyncedModelId(models: unknown, modelId: string): string {
+  if (!Array.isArray(models)) return modelId;
+  const match = findSyncedModelMeta(models, modelId);
+  if (match && typeof match.id === "string") {
+    return match.id;
+  }
+  return modelId;
 }
 
 function findLiveCatalogModelMeta(
@@ -364,6 +373,9 @@ async function lookupModelMeta(
       modelId,
       syncedModels
     );
+    if (!effort && resolvedModelId === modelId) {
+      resolvedModelId = resolveSyncedModelId(syncedModels, modelId);
+    }
     // Short-circuit registry suffix resolution when the raw id is already a direct
     // custom or synced model — otherwise a model literally named
     // `deepseek-v4-flash-low` gets rewritten to `deepseek-v4-flash` + effort `low`
