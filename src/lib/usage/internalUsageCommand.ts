@@ -603,9 +603,11 @@ export async function buildUsageCommandJson(
     const db = getDbInstance();
     const rows = db
       .prepare(
-        `SELECT id, model, provider, tokens_input AS tokensInput, tokens_output AS tokensOutput,
-                latency_ms AS latencyMs, success, timestamp
-         FROM usage_history
+        `SELECT id, COALESCE(NULLIF(requested_model, ''), model) AS model, provider,
+                tokens_in AS tokensInput, tokens_out AS tokensOutput,
+                duration AS latencyMs, (CASE WHEN status >= 200 AND status < 400 THEN 1 ELSE 0 END) AS success,
+                timestamp
+         FROM call_logs
          WHERE api_key_id = ?
          ORDER BY timestamp DESC
          LIMIT 15`
@@ -621,16 +623,27 @@ export async function buildUsageCommandJson(
         timestamp: string;
       }>;
 
-    recentCalls = rows.map((r) => ({
-      id: r.id,
-      model: r.model || "unknown",
-      provider: r.provider || "unknown",
-      tokensInput: Number(r.tokensInput || 0),
-      tokensOutput: Number(r.tokensOutput || 0),
-      latencyMs: Number(r.latencyMs || 0),
-      success: Boolean(r.success),
-      timestamp: r.timestamp || new Date().toISOString(),
-    }));
+    recentCalls = rows.map((r) => {
+      let displayModel = r.model || "unknown";
+      // Bersihkan model name dari prefix internal node atau vendor upstream (misal: "amanai/gpt-5.6-sol" -> "petirs/gpt-5.6-sol")
+      if (displayModel.startsWith("amanai/")) {
+        displayModel = `petirs/${displayModel.slice(7)}`;
+      } else if (displayModel.includes("openai-compatible-")) {
+        const parts = displayModel.split("/");
+        displayModel = `petirs/${parts[parts.length - 1]}`;
+      }
+
+      return {
+        id: r.id,
+        model: displayModel,
+        provider: r.provider ? r.provider.replace(/^openai-compatible-chat-.*$/, "petirs") : "unknown",
+        tokensInput: Number(r.tokensInput || 0),
+        tokensOutput: Number(r.tokensOutput || 0),
+        latencyMs: Number(r.latencyMs || 0),
+        success: Boolean(r.success),
+        timestamp: r.timestamp || new Date().toISOString(),
+      };
+    });
   } catch {
     // best-effort history
   }
