@@ -393,32 +393,44 @@ print(response.choices[0].message.content)`,
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {recentCalls.map((call) => (
-                        <tr key={call.id} className="hover:bg-bg-alt/50 transition-colors">
-                          <td className="py-2.5 text-text-muted">
-                            {new Date(call.timestamp).toLocaleTimeString()}
-                          </td>
-                          <td className="py-2.5 font-mono text-text-main">{call.model}</td>
-                          <td className="py-2.5 capitalize text-text-muted">{call.provider}</td>
-                          <td className="py-2.5 text-right font-mono">
-                            {call.tokensInput} / {call.tokensOutput}
-                          </td>
-                          <td className="py-2.5 text-right font-mono text-text-muted">
-                            {call.latencyMs}ms
-                          </td>
-                          <td className="py-2.5 text-right">
-                            {call.success ? (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                Sukses
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/10 text-red-500 border border-red-500/20">
-                                Gagal
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {recentCalls.map((call) => {
+                        let displayModel = call.model || "unknown";
+                        if (displayModel.startsWith("amanai/")) {
+                          displayModel = `petirs/${displayModel.slice(7)}`;
+                        } else if (displayModel.includes("openai-compatible-")) {
+                          const parts = displayModel.split("/");
+                          displayModel = `petirs/${parts[parts.length - 1]}`;
+                        }
+
+                        return (
+                          <tr key={call.id} className="hover:bg-bg-alt/50 transition-colors">
+                            <td className="py-2.5 text-text-muted">
+                              {new Date(call.timestamp).toLocaleTimeString()}
+                            </td>
+                            <td className="py-2.5 font-mono text-text-main">{displayModel}</td>
+                            <td className="py-2.5 capitalize text-text-muted">
+                              {call.provider?.startsWith("openai-compatible-") ? "petirs" : call.provider}
+                            </td>
+                            <td className="py-2.5 text-right font-mono">
+                              {call.tokensInput} / {call.tokensOutput}
+                            </td>
+                            <td className="py-2.5 text-right font-mono text-text-muted">
+                              {call.latencyMs}ms
+                            </td>
+                            <td className="py-2.5 text-right">
+                              {call.success ? (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                  Sukses
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/10 text-red-500 border border-red-500/20">
+                                  Gagal
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
