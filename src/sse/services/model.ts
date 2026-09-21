@@ -542,7 +542,7 @@ export async function getModelInfo(modelStr) {
           normalizedModel
         );
         return assertResolvedModelAvailable({
-          provider: matchedOpenAI.id,
+          provider: matchedOpenAI.prefix || matchedOpenAI.id,
           model: modelId,
           extendedContext,
           ...metadata,
@@ -564,7 +564,7 @@ export async function getModelInfo(modelStr) {
           normalizedModel
         );
         return assertResolvedModelAvailable({
-          provider: matchedAnthropic.id,
+          provider: matchedAnthropic.prefix || matchedAnthropic.id,
           model: modelId,
           extendedContext,
           ...metadata,
