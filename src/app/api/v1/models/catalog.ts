@@ -1238,10 +1238,19 @@ async function buildUnifiedModelsResponseCore(
           if (shouldHideByExposure(canonicalProviderId, sm.id)) continue;
 
           const registryEntry = REGISTRY[providerId];
-          const displayModelId =
+          let displayModelId =
             registryEntry?.modelIdPrefix && sm.id.startsWith(registryEntry.modelIdPrefix)
               ? sm.id.slice(registryEntry.modelIdPrefix.length)
               : sm.id;
+
+          // Jika model dari custom node upstream sudah membawa prefix internal (mis. amanai/qwen3.8-max)
+          // dan alias node yang disetel adalah 'petirs', pangkas prefix internal tersebut agar outputnya menjadi 'petirs/qwen3.8-max'
+          if (prefix && displayModelId.includes("/")) {
+            const parts = displayModelId.split("/");
+            if (parts.length === 2 && parts[0] !== prefix) {
+              displayModelId = parts[1];
+            }
+          }
 
           const aliasId = `${alias}/${displayModelId}`;
           const endpoints = Array.isArray(sm.supportedEndpoints) ? sm.supportedEndpoints : ["chat"];

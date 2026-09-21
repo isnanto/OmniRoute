@@ -221,7 +221,18 @@ function findCustomModelMeta(models: unknown, modelId: string): any {
 }
 
 function findSyncedModelMeta(models: unknown, modelId: string): any {
-  return Array.isArray(models) ? models.find((model: any) => model.id === modelId) : undefined;
+  if (!Array.isArray(models)) return undefined;
+  // 1. Direct match
+  const direct = models.find((model: any) => model?.id === modelId);
+  if (direct) return direct;
+
+  // 2. Jika modelId tidak mengandung prefix internal (mis. qwen3.8-max)
+  // tetapi di synced models tersimpan dengan prefix (mis. amanai/qwen3.8-max)
+  return models.find((model: any) => {
+    if (typeof model?.id !== "string") return false;
+    const parts = model.id.split("/");
+    return parts[parts.length - 1] === modelId;
+  });
 }
 
 function findLiveCatalogModelMeta(
