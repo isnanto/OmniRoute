@@ -1007,6 +1007,33 @@ export class DefaultExecutor extends BaseExecutor {
       }
     }
 
+    // For openai-compatible nodes whose upstream base URL is api.amanai.dev,
+    // the upstream API requires model names prefixed with "amanai/" (e.g. "amanai/qwen3.8-max").
+    // OmniRoute strips the display prefix ("petirs/") before reaching here, leaving the bare
+    // model name. We detect the Amanai upstream by its base URL and re-attach the required
+    // vendor prefix before the request is forwarded — transparent to the client.
+    if (
+      this.provider.startsWith("openai-compatible-") &&
+      typeof withDefaults === "object" &&
+      withDefaults !== null &&
+      !Array.isArray(withDefaults)
+    ) {
+      const body = withDefaults as Record<string, unknown>;
+      if (typeof body.model === "string") {
+        const psd = credentials?.providerSpecificData as Record<string, unknown> | undefined;
+        const baseUrl = typeof psd?.baseUrl === "string" ? psd.baseUrl : "";
+        if (baseUrl.includes("amanai.dev") && !body.model.startsWith("amanai/")) {
+          // Strip any residual provider-prefix segments (e.g. "openai-compatible-.../model"
+          // or "petirs/model") that may have survived pipeline normalisation, then prepend
+          // the required "amanai/" vendor prefix.
+          const bareModel = body.model.includes("/")
+            ? body.model.slice(body.model.lastIndexOf("/") + 1)
+            : body.model;
+          body.model = `amanai/${bareModel}`;
+        }
+      }
+    }
+
     // Reasoning models burn all of max_tokens on the thinking phase when the budget is too
     // small, leaving content empty (finish_reason: "length"); applies to all providers (#6912).
     if (typeof withDefaults === "object" && withDefaults !== null) {
