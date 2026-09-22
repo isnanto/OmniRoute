@@ -63,21 +63,26 @@ async function hydrateCompatibleNodeBaseUrl(
   provider: string,
   providerSpecificData: JsonRecord
 ): Promise<JsonRecord> {
-  if (typeof providerSpecificData.baseUrl === "string" && providerSpecificData.baseUrl) {
-    return providerSpecificData;
-  }
   if (!isCompatibleProviderConnectionId(provider)) return providerSpecificData;
 
   try {
     const nodes = (await getCachedProviderNodes()) as JsonRecord[];
     const node = selectProviderNodeForConnection(provider, nodes);
-    if (!node || typeof node.baseUrl !== "string" || !node.baseUrl) return providerSpecificData;
+    if (!node) return providerSpecificData;
+
+    const resolvedBaseUrl =
+      typeof providerSpecificData.baseUrl === "string" && providerSpecificData.baseUrl
+        ? providerSpecificData.baseUrl
+        : typeof node.baseUrl === "string" && node.baseUrl
+          ? node.baseUrl
+          : null;
+    if (!resolvedBaseUrl) return providerSpecificData;
 
     return {
       ...providerSpecificData,
       prefix: providerSpecificData.prefix ?? node.prefix,
       apiType: providerSpecificData.apiType ?? node.apiType,
-      baseUrl: node.baseUrl,
+      baseUrl: resolvedBaseUrl,
       nodeName: providerSpecificData.nodeName ?? node.name,
       ...(node.chatPath && !providerSpecificData.chatPath ? { chatPath: node.chatPath } : {}),
       ...(node.modelsPath && !providerSpecificData.modelsPath
@@ -85,6 +90,11 @@ async function hydrateCompatibleNodeBaseUrl(
         : {}),
       ...(node.customHeaders && !providerSpecificData.customHeaders
         ? { customHeaders: node.customHeaders }
+        : {}),
+      // Propagate the operator-configured model prefix so DefaultExecutor can
+      // prepend it to the bare model name without any hardcoded domain checks.
+      ...(node.modelIdPrefix && !providerSpecificData.modelIdPrefix
+        ? { modelIdPrefix: node.modelIdPrefix }
         : {}),
     };
   } catch {

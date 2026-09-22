@@ -31,6 +31,7 @@ interface CompatibleFormState {
   baseUrl: string;
   chatPath: string;
   modelsPath: string;
+  modelIdPrefix: string;
   iconUrl: string;
   clientIdentityProfile: string;
   newApiAggregatorBalance: boolean;
@@ -89,6 +90,7 @@ function createInitialForm(mode: CompatibleMode): CompatibleFormState {
     baseUrl: defaults.baseUrl,
     chatPath: defaults.chatPath,
     modelsPath: "",
+    modelIdPrefix: "",
     iconUrl: "",
     clientIdentityProfile: "default",
     newApiAggregatorBalance: false,
@@ -225,6 +227,7 @@ export default function AddCompatibleProviderModal({
       };
       if (defaults.hasApiType) body.apiType = formData.apiType;
       if (defaults.hasModelsPath) body.modelsPath = formData.modelsPath || "";
+      body.modelIdPrefix = formData.modelIdPrefix.trim();
       if (defaults.compatMode) body.compatMode = defaults.compatMode;
       body.iconUrl = formData.iconUrl.trim();
       // Merge the selected identity profile's preset headers into the SAME
@@ -289,12 +292,18 @@ export default function AddCompatibleProviderModal({
       };
       if (defaults.hasApiType) body.apiType = formData.apiType;
       if (defaults.hasModelsPath) body.modelsPath = formData.modelsPath || "";
+      body.modelIdPrefix = formData.modelIdPrefix.trim();
       if (defaults.compatMode) {
         body.compatMode = defaults.compatMode;
         body.chatPath = formData.chatPath || CC_DEFAULT_CHAT_PATH;
       }
       const trimmedModelId = checkModelId.trim();
-      if (trimmedModelId) body.modelId = trimmedModelId;
+      if (trimmedModelId) {
+        body.modelId =
+          formData.modelIdPrefix.trim() && !trimmedModelId.startsWith(formData.modelIdPrefix.trim())
+            ? `${formData.modelIdPrefix.trim()}${trimmedModelId}`
+            : trimmedModelId;
+      }
 
       const res = await fetch("/api/provider-nodes/validate", {
         method: "POST",
@@ -418,6 +427,19 @@ export default function AddCompatibleProviderModal({
                 onChange={(e) => setFormData({ ...formData, modelsPath: e.target.value })}
                 placeholder={t("modelsPathPlaceholder")}
                 hint={t("modelsPathHint")}
+              />
+            )}
+            {mode === "openai" && (
+              <Input
+                label={providerText(t, "modelIdPrefixLabel", "Upstream Model Prefix")}
+                value={formData.modelIdPrefix}
+                onChange={(e) => setFormData({ ...formData, modelIdPrefix: e.target.value })}
+                placeholder="amanai/"
+                hint={providerText(
+                  t,
+                  "modelIdPrefixHint",
+                  "Optional prefix sent only to the upstream provider. Include the trailing slash. Clients still use your public prefix/model name."
+                )}
               />
             )}
             <Select

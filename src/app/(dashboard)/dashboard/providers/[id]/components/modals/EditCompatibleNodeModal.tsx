@@ -14,6 +14,7 @@ interface EditCompatibleNodeModalNode {
   baseUrl?: string;
   chatPath?: string;
   modelsPath?: string;
+  modelIdPrefix?: string | null;
   iconUrl?: string;
   dailyQuotaResetTimezone?: string | null;
   dailyQuotaResetHour?: number | null;
@@ -45,6 +46,7 @@ export default function EditCompatibleNodeModal({
     baseUrl: "https://api.openai.com/v1",
     chatPath: "",
     modelsPath: "",
+    modelIdPrefix: "",
     iconUrl: "",
     newApiAggregatorBalance: false,
     consoleApiKey: "",
@@ -97,6 +99,7 @@ export default function EditCompatibleNodeModal({
               : "https://api.openai.com/v1"),
         chatPath: node.chatPath || (isCcCompatible ? CC_COMPATIBLE_DEFAULT_CHAT_PATH : ""),
         modelsPath: isCcCompatible ? "" : node.modelsPath || "",
+        modelIdPrefix: node.modelIdPrefix || "",
         iconUrl: node.iconUrl || "",
         newApiAggregatorBalance: psd.newApiAggregatorBalance === true,
         consoleApiKey: typeof psd.consoleApiKey === "string" ? psd.consoleApiKey : "",
@@ -114,6 +117,7 @@ export default function EditCompatibleNodeModal({
         !!(
           node.chatPath ||
           (!isCcCompatible && node.modelsPath) ||
+          (!isAnthropic && node.modelIdPrefix) ||
           (isCcCompatible && !node.chatPath)
         )
       );
@@ -148,6 +152,7 @@ export default function EditCompatibleNodeModal({
         baseUrl: formData.baseUrl,
         chatPath: formData.chatPath || (isCcCompatible ? CC_COMPATIBLE_DEFAULT_CHAT_PATH : ""),
         modelsPath: isCcCompatible ? "" : formData.modelsPath,
+        modelIdPrefix: isAnthropic ? "" : formData.modelIdPrefix.trim(),
         iconUrl: formData.iconUrl.trim(),
       };
       const tz = formData.dailyQuotaResetTimezone.trim();
@@ -199,7 +204,12 @@ export default function EditCompatibleNodeModal({
           compatMode: isCcCompatible ? "cc" : undefined,
           chatPath: formData.chatPath || (isCcCompatible ? CC_COMPATIBLE_DEFAULT_CHAT_PATH : ""),
           modelsPath: isCcCompatible ? "" : formData.modelsPath,
-          modelId: checkModelId.trim() || undefined,
+          modelIdPrefix: isAnthropic ? "" : formData.modelIdPrefix.trim(),
+          modelId: checkModelId.trim()
+            ? formData.modelIdPrefix.trim() && !checkModelId.trim().startsWith(formData.modelIdPrefix.trim())
+              ? `${formData.modelIdPrefix.trim()}${checkModelId.trim()}`
+              : checkModelId.trim()
+            : undefined,
         }),
       });
       const data = await res.json();
@@ -356,6 +366,19 @@ export default function EditCompatibleNodeModal({
                 onChange={(e) => setFormData({ ...formData, modelsPath: e.target.value })}
                 placeholder={t("modelsPathPlaceholder")}
                 hint={t("modelsPathHint")}
+              />
+            )}
+            {!isAnthropic && (
+              <Input
+                label={providerText(t, "modelIdPrefixLabel", "Upstream Model Prefix")}
+                value={formData.modelIdPrefix}
+                onChange={(e) => setFormData({ ...formData, modelIdPrefix: e.target.value })}
+                placeholder="amanai/"
+                hint={providerText(
+                  t,
+                  "modelIdPrefixHint",
+                  "Optional prefix sent only to the upstream provider. Include the trailing slash. Clients still use your public prefix/model name."
+                )}
               />
             )}
             <Input

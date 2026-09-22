@@ -56,8 +56,19 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (isValidationFailure(validation)) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
-    const { name, prefix, apiType, baseUrl, chatPath, modelsPath, customHeaders, iconUrl, dailyQuotaResetTimezone, dailyQuotaResetHour } =
-      validation.data;
+    const {
+      name,
+      prefix,
+      apiType,
+      baseUrl,
+      chatPath,
+      modelsPath,
+      modelIdPrefix,
+      customHeaders,
+      iconUrl,
+      dailyQuotaResetTimezone,
+      dailyQuotaResetHour,
+    } = validation.data;
     const node: any = await getProviderNodeById(id);
 
     if (!node) {
@@ -94,6 +105,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       baseUrl: sanitizedBaseUrl,
       chatPath: chatPath || null,
       modelsPath: isClaudeCodeCompatibleProvider(id) ? null : modelsPath || null,
+      modelIdPrefix: modelIdPrefix?.trim() || null,
       // #2166: explicit null (not omission) so an empty submission clears a
       // previously stored custom icon.
       iconUrl: iconUrl?.trim() || null,
@@ -143,6 +155,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
           providerSpecificData.modelsPath = updated.modelsPath;
         } else {
           delete providerSpecificData.modelsPath;
+        }
+        if (updated.modelIdPrefix) {
+          providerSpecificData.modelIdPrefix = updated.modelIdPrefix;
+        } else {
+          delete providerSpecificData.modelIdPrefix;
         }
         if (node.type === "openai-compatible") {
           providerSpecificData.apiType = apiType;

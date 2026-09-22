@@ -109,14 +109,18 @@ export async function createProviderNode(data: JsonRecord) {
     customHeadersJson,
     dailyQuotaResetTimezone: data.dailyQuotaResetTimezone || null,
     dailyQuotaResetHour: normalizeDailyQuotaResetHour(data.dailyQuotaResetHour),
+    // Vendor model prefix prepended to the bare model name before forwarding to upstream
+    // (e.g. "amanai/" → upstream receives "amanai/qwen3.8-max" instead of "qwen3.8-max").
+    // Empty string and null are both treated as "no prefix". Set per-node in the dashboard.
+    modelIdPrefix: typeof data.modelIdPrefix === "string" && data.modelIdPrefix ? data.modelIdPrefix : null,
     createdAt: now,
     updatedAt: now,
   };
 
   db.prepare(
     `
-    INSERT INTO provider_nodes (id, type, name, prefix, api_type, base_url, chat_path, models_path, icon_url, custom_headers_json, daily_quota_reset_timezone, daily_quota_reset_hour, created_at, updated_at)
-    VALUES (@id, @type, @name, @prefix, @apiType, @baseUrl, @chatPath, @modelsPath, @iconUrl, @customHeadersJson, @dailyQuotaResetTimezone, @dailyQuotaResetHour, @createdAt, @updatedAt)
+    INSERT INTO provider_nodes (id, type, name, prefix, api_type, base_url, chat_path, models_path, icon_url, custom_headers_json, daily_quota_reset_timezone, daily_quota_reset_hour, model_id_prefix, created_at, updated_at)
+    VALUES (@id, @type, @name, @prefix, @apiType, @baseUrl, @chatPath, @modelsPath, @iconUrl, @customHeadersJson, @dailyQuotaResetTimezone, @dailyQuotaResetHour, @modelIdPrefix, @createdAt, @updatedAt)
   `
   ).run(node);
 
@@ -157,6 +161,7 @@ export async function updateProviderNode(id: string, data: JsonRecord) {
     custom_headers_json = @customHeadersJson,
     daily_quota_reset_timezone = @dailyQuotaResetTimezone,
     daily_quota_reset_hour = @dailyQuotaResetHour,
+    model_id_prefix = @modelIdPrefix,
     updated_at = @updatedAt
     WHERE id = @id
   `
@@ -175,6 +180,7 @@ export async function updateProviderNode(id: string, data: JsonRecord) {
     customHeadersJson: merged["customHeadersJson"] || null,
     dailyQuotaResetTimezone: merged["dailyQuotaResetTimezone"] || null,
     dailyQuotaResetHour: normalizeDailyQuotaResetHour(merged["dailyQuotaResetHour"]),
+    modelIdPrefix: typeof merged["modelIdPrefix"] === "string" && merged["modelIdPrefix"] ? merged["modelIdPrefix"] : null,
     updatedAt: merged["updatedAt"],
   });
 

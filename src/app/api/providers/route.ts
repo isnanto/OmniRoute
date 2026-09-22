@@ -247,6 +247,7 @@ export async function POST(request: Request) {
         nodeName: node.name,
         ...(node.chatPath ? { chatPath: node.chatPath } : {}),
         ...(node.modelsPath ? { modelsPath: node.modelsPath } : {}),
+        ...(node.modelIdPrefix ? { modelIdPrefix: node.modelIdPrefix } : {}),
         ...(node.customHeaders ? { customHeaders: node.customHeaders } : {}),
       };
     } else if (isAnthropicCompatibleProvider(provider)) {
@@ -271,6 +272,7 @@ export async function POST(request: Request) {
         nodeName: node.name,
         ...(node.chatPath ? { chatPath: node.chatPath } : {}),
         ...(node.modelsPath ? { modelsPath: node.modelsPath } : {}),
+        ...(node.modelIdPrefix ? { modelIdPrefix: node.modelIdPrefix } : {}),
         ...(node.customHeaders ? { customHeaders: node.customHeaders } : {}),
       };
     }

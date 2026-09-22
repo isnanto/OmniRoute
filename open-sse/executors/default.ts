@@ -1007,11 +1007,12 @@ export class DefaultExecutor extends BaseExecutor {
       }
     }
 
-    // For openai-compatible nodes whose upstream base URL is api.amanai.dev,
-    // the upstream API requires model names prefixed with "amanai/" (e.g. "amanai/qwen3.8-max").
-    // OmniRoute strips the display prefix ("petirs/") before reaching here, leaving the bare
-    // model name. We detect the Amanai upstream by its base URL and re-attach the required
-    // vendor prefix before the request is forwarded — transparent to the client.
+    // For openai-compatible nodes that have a modelIdPrefix configured (stored in
+    // provider_nodes.model_id_prefix, propagated via providerSpecificData), prepend
+    // that prefix to the bare model name before forwarding to upstream.
+    // This is the generic mechanism — no hardcoded domains or provider names.
+    // Example: modelIdPrefix="amanai/" → upstream receives "amanai/qwen3.8-max".
+    //          modelIdPrefix="openrouter/" → upstream receives "openrouter/meta-llama/...".
     if (
       this.provider.startsWith("openai-compatible-") &&
       typeof withDefaults === "object" &&
@@ -1021,15 +1022,12 @@ export class DefaultExecutor extends BaseExecutor {
       const body = withDefaults as Record<string, unknown>;
       if (typeof body.model === "string") {
         const psd = credentials?.providerSpecificData as Record<string, unknown> | undefined;
-        const baseUrl = typeof psd?.baseUrl === "string" ? psd.baseUrl : "";
-        if (baseUrl.includes("amanai.dev") && !body.model.startsWith("amanai/")) {
-          // Strip any residual provider-prefix segments (e.g. "openai-compatible-.../model"
-          // or "petirs/model") that may have survived pipeline normalisation, then prepend
-          // the required "amanai/" vendor prefix.
-          const bareModel = body.model.includes("/")
-            ? body.model.slice(body.model.lastIndexOf("/") + 1)
-            : body.model;
-          body.model = `amanai/${bareModel}`;
+        const modelIdPrefix = typeof psd?.modelIdPrefix === "string" ? psd.modelIdPrefix : "";
+        if (modelIdPrefix && !body.model.startsWith(modelIdPrefix)) {
+          // Preserve the complete model ID, including nested vendor/family paths such as
+          // "meta-llama/llama-3.3-70b-instruct". Provider/display prefixes have already
+          // been removed by model resolution before the request reaches the executor.
+          body.model = `${modelIdPrefix}${body.model}`;
         }
       }
     }
