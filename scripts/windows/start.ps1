@@ -1,9 +1,9 @@
-# OmniRoute — Windows Production Startup Script
+# OmniRoute - Windows Production Startup Script
 #
 # Gunakan script ini setiap kali OmniRoute perlu distart atau direstart di Windows.
 # Script ini memastikan PORT dan env lain terset dengan benar sebelum PM2 dijalankan,
 # karena Next.js standalone (server.js) membaca process.env.PORT saat proses pertama
-# kali dimulai — bukan dari PM2 env injection yang datang belakangan.
+# kali dimulai - bukan dari PM2 env injection yang datang belakangan.
 #
 # Cara pakai:
 #   powershell -ExecutionPolicy Bypass -File C:\OmniRoute\scripts\windows\start.ps1
@@ -34,7 +34,7 @@ if ($oldPid) {
     Start-Sleep -Seconds 2
 }
 
-# Set env di shell saat ini — PM2 fork_mode mewarisi env dari shell ini
+# Set env di shell saat ini - PM2 fork_mode mewarisi env dari shell ini
 $env:PORT     = $Port
 $env:HOST     = $Host
 $env:NODE_ENV = "production"
@@ -53,7 +53,7 @@ pm2 save
 Start-Sleep -Seconds 5
 $listenPid = (Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
 if ($listenPid) {
-    Write-Host "[OmniRoute] OK — listening on port $Port (PID $listenPid)"
+    Write-Host "[OmniRoute] OK - listening on port $Port (PID $listenPid)"
 } else {
-    Write-Host "[OmniRoute] WARNING — port $Port tidak ditemukan, cek pm2 logs omniroute"
+    Write-Host "[OmniRoute] WARNING - port $Port tidak ditemukan, cek pm2 logs omniroute"
 }
