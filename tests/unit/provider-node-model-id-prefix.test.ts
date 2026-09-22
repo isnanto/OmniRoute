@@ -84,7 +84,7 @@ test("provider node CRUD persists and updates modelIdPrefix", async () => {
 });
 
 test("compatible connection hydration includes modelIdPrefix even when baseUrl already exists", async () => {
-  const provider = "openai-compatible-chat-hydration-test";
+  const provider = "openai-compatible-chat-7cb7a050-2a8f-4601-a59a-a07adef2a564";
   await providersDb.createProviderNode({
     id: provider,
     type: "openai-compatible",
