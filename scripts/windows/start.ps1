@@ -13,7 +13,7 @@
 
 param(
     [string]$Port = "20128",
-    [string]$Host = "0.0.0.0",
+    [string]$BindHost = "0.0.0.0",
     [string]$BuildDir = "$PSScriptRoot\..\..\..\.build\next\standalone"
 )
 
@@ -36,7 +36,7 @@ if ($oldPid) {
 
 # Set env di shell saat ini - PM2 fork_mode mewarisi env dari shell ini
 $env:PORT     = $Port
-$env:HOST     = $Host
+$env:HOST     = $BindHost
 $env:NODE_ENV = "production"
 
 # Hapus instance PM2 lama dan start ulang dengan env yang benar
